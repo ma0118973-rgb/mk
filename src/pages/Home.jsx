@@ -81,18 +81,18 @@ export const Home = () => {
       </div>
 
       {/* The Collection */}
-      <section className="container mx-auto px-4 lg:px-8 py-20">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 border-b border-black pb-6">
-          <h2 className="text-4xl lg:text-5xl font-serif font-bold text-gray-900">The Collection</h2>
+      <section className="container mx-auto px-4 lg:px-8 py-12 lg:py-20">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-10 md:mb-16 border-b border-black pb-6">
+          <h2 className="text-3xl lg:text-5xl font-serif font-bold text-gray-900">The Collection</h2>
           <div className="mt-4 md:mt-0">
             <Link to="/category/news" className="text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-black transition-colors">View Full Archive <i className="fas fa-arrow-right ml-1"></i></Link>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-8 md:gap-y-16">
           {collection.map(t => <ArticleCard key={t.id} article={t} />)}
         </div>
         {visibleCount < articles.length && (
-          <div className="mt-20 text-center">
+          <div className="mt-12 lg:mt-20 text-center">
             <button onClick={() => setVisibleCount(c => c + 6)} className="bg-white text-black border border-black px-12 py-4 text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all duration-300">Load More Stories</button>
           </div>
         )}

@@ -16,7 +16,7 @@ export const Footer = () => {
 
   return (
     <footer className="bg-[#0f172a] text-white mt-20 pt-16 pb-32 border-t-8 border-indigo-600 relative">
-      <div className="container mx-auto px-6 safe-area-padding">
+      <div className="container mx-auto px-4 lg:px-6 safe-area-padding">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="md:col-span-2">
             <h2 className="brand-logo text-4xl mb-6 font-black tracking-tight text-white">VELARA.</h2>

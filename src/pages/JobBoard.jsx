@@ -82,7 +82,7 @@ export const JobBoard = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-4 py-6 sm:py-8 pb-28 sm:pb-32">
+    <div className="max-w-5xl mx-auto px-4 sm:px-4 py-6 sm:py-8 pb-safe sm:pb-32">
       <JobModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handlePostJob} />
       
       <div className="bg-gradient-to-r from-blue-900 to-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 text-center text-white mb-8 sm:mb-12 shadow-2xl relative overflow-hidden">
