@@ -9,8 +9,10 @@ export const JobModal = ({ isOpen, onClose, onSubmit }) => {
     duration: '',
     whatsapp: '',
     email: '',
-    description: ''
+    description: '',
+    imageUrl: ''
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -28,6 +30,32 @@ export const JobModal = ({ isOpen, onClose, onSubmit }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+        const response = await fetch(`/.netlify/functions/media?filename=${encodeURIComponent(file.name)}`, {
+            method: 'POST',
+            body: file,
+            headers: {
+                'Content-Type': file.type
+            }
+        });
+        
+        if (!response.ok) throw new Error('Upload failed');
+        
+        const data = await response.json();
+        setFormData(prev => ({ ...prev, imageUrl: data.url }));
+    } catch (error) {
+        console.error(error);
+        alert('Failed to upload image. Please try again.');
+    } finally {
+        setIsUploading(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
@@ -35,7 +63,7 @@ export const JobModal = ({ isOpen, onClose, onSubmit }) => {
       id: Date.now().toString(),
       isUserPosted: true,
       postedDate: new Date().toLocaleDateString(),
-      salaryRange: 'Negotiable' // Default or add field if needed
+      salaryRange: 'Negotiable'
     });
     onClose();
   };
@@ -81,6 +109,25 @@ export const JobModal = ({ isOpen, onClose, onSubmit }) => {
             </div>
           </div>
 
+          <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+              <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Company Logo / Image</label>
+              <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                      <label className="w-full flex items-center justify-center gap-2 bg-white border-2 border-dashed border-indigo-200 rounded-lg p-3 cursor-pointer hover:bg-indigo-50 transition-colors text-indigo-600 font-bold text-sm">
+                          <i className="fas fa-image"></i>
+                          {formData.imageUrl ? 'Change Image' : 'Upload Logo'}
+                          <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                      </label>
+                      {isUploading && <p className="text-[10px] text-indigo-600 font-bold mt-1 animate-pulse">Uploading...</p>}
+                  </div>
+                  {formData.imageUrl && (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-white shadow-sm bg-white shrink-0">
+                          <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-contain" />
+                      </div>
+                  )}
+              </div>
+          </div>
+
           <div>
              <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Duration / Hours <span className="text-red-500">*</span></label>
              <input required name="duration" value={formData.duration} onChange={handleChange} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 font-medium text-gray-900 text-base focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors" placeholder="e.g. 40h/week, 6 months" />
@@ -111,3 +158,4 @@ export const JobModal = ({ isOpen, onClose, onSubmit }) => {
     </div>
   );
 };
+

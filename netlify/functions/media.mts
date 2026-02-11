@@ -34,9 +34,28 @@ export default async (req: Request, context: Context) => {
     }
   }
 
-  // Handle Image Retrieval
+  // Handle Image Retrieval or Listing
   if (req.method === "GET") {
     const key = url.searchParams.get("key");
+    const list = url.searchParams.get("list");
+
+    // List all images
+    if (list === "true") {
+        try {
+            const { blobs } = await store.list();
+            const results = blobs.map(b => ({
+                key: b.key,
+                url: `/.netlify/functions/media?key=${encodeURIComponent(b.key)}`
+            }));
+            // Sort by key (which starts with timestamp) descending to show newest first
+            results.sort((a, b) => b.key.localeCompare(a.key));
+            return Response.json(results);
+        } catch (error) {
+            console.error("List failed:", error);
+            return Response.json({ error: "List failed" }, { status: 500 });
+        }
+    }
+
     if (!key) return new Response("Missing key", { status: 400 });
 
     try {
@@ -57,6 +76,20 @@ export default async (req: Request, context: Context) => {
       console.error("Fetch failed:", err);
       return new Response("Error fetching media", { status: 500 });
     }
+  }
+
+  // Handle Deletion
+  if (req.method === "DELETE") {
+      const key = url.searchParams.get("key");
+      if (!key) return new Response("Missing key", { status: 400 });
+
+      try {
+          await store.delete(key);
+          return Response.json({ success: true });
+      } catch (error) {
+          console.error("Delete failed:", error);
+          return Response.json({ error: "Delete failed" }, { status: 500 });
+      }
   }
 
   return new Response("Method Not Allowed", { status: 405 });
