@@ -18,11 +18,38 @@ export const AdminDashboard = () => {
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
   const [seoKeywords, setSeoKeywords] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // Job Form State
   const [jobData, setJobData] = useState({
     title: '', company: '', location: '', type: 'Full-time', duration: '', whatsapp: '', email: '', description: '', salaryRange: 'Negotiable'
   });
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+        const response = await fetch(`/.netlify/functions/media?filename=${encodeURIComponent(file.name)}`, {
+            method: 'POST',
+            body: file,
+            headers: {
+                'Content-Type': file.type
+            }
+        });
+        
+        if (!response.ok) throw new Error('Upload failed');
+        
+        const data = await response.json();
+        setImageUrl(data.url);
+    } catch (error) {
+        console.error(error);
+        alert('Failed to upload image. Please try again.');
+    } finally {
+        setIsUploading(false);
+    }
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -247,8 +274,15 @@ export const AdminDashboard = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-500 mb-1 uppercase">Cover Image URL</label>
-                    <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full border-2 border-gray-200 rounded-lg p-3" placeholder="https://..." />
+                    <label className="block text-sm font-bold text-gray-500 mb-1 uppercase">Cover Image</label>
+                    <div className="flex gap-2">
+                        <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="flex-1 border-2 border-gray-200 rounded-lg p-3" placeholder="https://..." />
+                        <label className="bg-indigo-600 text-white px-4 py-3 rounded-lg font-bold cursor-pointer hover:bg-indigo-700 whitespace-nowrap">
+                            Upload
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                        </label>
+                    </div>
+                    {isUploading && <p className="text-xs text-indigo-600 font-bold mt-1">Uploading...</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-500 mb-1 uppercase">Content (HTML supported)</label>
