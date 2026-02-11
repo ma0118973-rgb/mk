@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { CATEGORIES } from '../services/api';
 
@@ -6,7 +6,9 @@ export const AdminDashboard = () => {
   const { articles, addArticle, deleteArticle, jobs, addJob, deleteJob, users, banUser } = useAppContext();
   const [activeTab, setActiveTab] = useState('create');
   const [pin, setPin] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+      return localStorage.getItem('pg_admin_authenticated') === 'true';
+  });
 
   // Article Form State
   const [title, setTitle] = useState('');
@@ -22,10 +24,36 @@ export const AdminDashboard = () => {
 
   // Job Form State
   const [jobData, setJobData] = useState({
-    title: '', company: '', location: '', type: 'Full-time', duration: '', whatsapp: '', email: '', description: '', salaryRange: 'Negotiable'
+    title: '', company: '', location: '', type: 'Full-time', duration: '', whatsapp: '', email: '', description: '', salaryRange: 'Negotiable', imageUrl: ''
   });
 
-  const handleImageUpload = async (e) => {
+  // Media Gallery State
+  const [mediaGallery, setMediaGallery] = useState([]);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false);
+  const [showGallerySelector, setShowGallerySelector] = useState(null); // 'article' or 'job'
+
+  const fetchGallery = useCallback(async () => {
+      setIsLoadingGallery(true);
+      try {
+          const response = await fetch('/.netlify/functions/media?list=true');
+          if (response.ok) {
+              const data = await response.json();
+              setMediaGallery(data);
+          }
+      } catch (error) {
+          console.error('Failed to fetch gallery:', error);
+      } finally {
+          setIsLoadingGallery(false);
+      }
+  }, []);
+
+  useEffect(() => {
+      if (isAuthenticated) {
+          fetchGallery();
+      }
+  }, [isAuthenticated, fetchGallery]);
+
+  const handleImageUpload = async (e, target = 'article') => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -42,7 +70,12 @@ export const AdminDashboard = () => {
         if (!response.ok) throw new Error('Upload failed');
         
         const data = await response.json();
-        setImageUrl(data.url);
+        if (target === 'article') {
+            setImageUrl(data.url);
+        } else {
+            setJobData(prev => ({ ...prev, imageUrl: data.url }));
+        }
+        fetchGallery(); // Refresh gallery after upload
     } catch (error) {
         console.error(error);
         alert('Failed to upload image. Please try again.');
@@ -51,13 +84,33 @@ export const AdminDashboard = () => {
     }
   };
 
+  const deleteMedia = async (key) => {
+      if (!window.confirm('Are you sure you want to delete this image?')) return;
+      try {
+          const response = await fetch(`/.netlify/functions/media?key=${encodeURIComponent(key)}`, {
+              method: 'DELETE'
+          });
+          if (response.ok) {
+              fetchGallery();
+          }
+      } catch (error) {
+          console.error('Delete failed:', error);
+      }
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
     if (pin === '33451') {
       setIsAuthenticated(true);
+      localStorage.setItem('pg_admin_authenticated', 'true');
     } else {
       alert('Access Denied');
     }
+  };
+
+  const handleLogout = () => {
+      setIsAuthenticated(false);
+      localStorage.removeItem('pg_admin_authenticated');
   };
 
   const handleJobChange = (e) => {
@@ -70,12 +123,12 @@ export const AdminDashboard = () => {
       addJob({
           ...jobData,
           id: Date.now().toString(),
-          isUserPosted: true, // Or false if admin posted, but keeping consistent for now
+          isUserPosted: true,
           postedDate: new Date().toLocaleDateString(),
           source: 'Admin'
       });
       alert('Job Posted Successfully!');
-      setJobData({ title: '', company: '', location: '', type: 'Full-time', duration: '', whatsapp: '', email: '', description: '', salaryRange: 'Negotiable' });
+      setJobData({ title: '', company: '', location: '', type: 'Full-time', duration: '', whatsapp: '', email: '', description: '', salaryRange: 'Negotiable', imageUrl: '' });
   };
 
   const handleSubmit = (e) => {
@@ -110,11 +163,39 @@ export const AdminDashboard = () => {
     setSeoKeywords('');
   };
 
+  const GalleryModal = ({ onSelect, onClose }) => (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
+              <div className="p-6 border-b flex justify-between items-center bg-indigo-50">
+                  <h3 className="text-xl font-bold text-indigo-900">Select from Gallery</h3>
+                  <button onClick={onClose} className="text-gray-500 hover:text-black"><i className="fas fa-times text-xl"></i></button>
+              </div>
+              <div className="p-6 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50">
+                  {mediaGallery.length === 0 ? (
+                      <div className="col-span-full py-20 text-center text-gray-400">
+                          <i className="far fa-images text-5xl mb-4"></i>
+                          <p>No images in gallery yet. Upload some first!</p>
+                      </div>
+                  ) : (
+                      mediaGallery.map(item => (
+                          <div key={item.key} className="group relative aspect-square bg-white rounded-lg overflow-hidden border-2 border-transparent hover:border-indigo-500 cursor-pointer shadow-sm transition-all" onClick={() => { onSelect(item.url); onClose(); }}>
+                              <img src={item.url} alt="" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <span className="bg-white text-indigo-600 px-3 py-1 rounded-full text-xs font-bold shadow-lg">Select</span>
+                              </div>
+                          </div>
+                      ))
+                  )}
+              </div>
+          </div>
+      </div>
+  );
+
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-indigo-900 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-indigo-900 p-4 font-sans">
         <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full border-4 border-indigo-500">
-          <h3 className="text-xl font-bold text-center mb-6 text-indigo-900">Publisher Login</h3>
+          <h3 className="text-xl font-bold text-center mb-6 text-indigo-900 uppercase tracking-widest">Publisher Login</h3>
           <form onSubmit={handleLogin}>
             <input 
               type="password" 
@@ -124,7 +205,7 @@ export const AdminDashboard = () => {
               onChange={(e) => setPin(e.target.value)} 
               className="w-full text-center text-3xl tracking-[0.5em] border-2 border-indigo-100 rounded-lg py-4 focus:outline-none focus:border-indigo-600 mb-6 font-bold text-indigo-900"
             />
-            <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-indigo-700 shadow-lg">Enter Dashboard</button>
+            <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-indigo-700 shadow-lg transition-all active:scale-95">Enter Dashboard</button>
           </form>
         </div>
       </div>
@@ -132,17 +213,69 @@ export const AdminDashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 bg-slate-50 min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 py-8 bg-slate-50 min-h-screen font-sans">
+      {showGallerySelector && (
+          <GalleryModal 
+            onSelect={(url) => {
+                if (showGallerySelector === 'article') setImageUrl(url);
+                else setJobData(prev => ({ ...prev, imageUrl: url }));
+            }} 
+            onClose={() => setShowGallerySelector(null)} 
+          />
+      )}
+
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-        <h1 className="text-3xl font-black text-indigo-900">Publisher Dashboard</h1>
-        <div className="bg-white rounded-lg shadow-sm p-1 inline-flex border border-gray-200 flex-wrap justify-center">
-          <button onClick={() => setActiveTab('create')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'create' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Write Article</button>
-          <button onClick={() => setActiveTab('create-job')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'create-job' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Post Job</button>
-          <button onClick={() => setActiveTab('manage')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'manage' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Manage Articles</button>
-          <button onClick={() => setActiveTab('manage-jobs')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'manage-jobs' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Manage Jobs</button>
-          <button onClick={() => setActiveTab('manage-users')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'manage-users' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Users</button>
+        <div>
+            <h1 className="text-3xl font-black text-indigo-900">Publisher Dashboard</h1>
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Management Console v2.0</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+            <div className="bg-white rounded-lg shadow-sm p-1 inline-flex border border-gray-200 flex-wrap justify-center">
+              <button onClick={() => setActiveTab('create')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'create' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Write Article</button>
+              <button onClick={() => setActiveTab('create-job')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'create-job' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Post Job</button>
+              <button onClick={() => setActiveTab('gallery')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'gallery' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Gallery</button>
+              <button onClick={() => setActiveTab('manage')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'manage' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Articles</button>
+              <button onClick={() => setActiveTab('manage-jobs')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'manage-jobs' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Jobs</button>
+              <button onClick={() => setActiveTab('manage-users')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'manage-users' ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>Users</button>
+            </div>
+            <button onClick={handleLogout} className="text-xs font-black uppercase tracking-widest text-red-500 hover:underline">Logout</button>
         </div>
       </div>
+
+      {activeTab === 'gallery' && (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8">
+              <div className="flex justify-between items-center mb-8 border-b pb-4">
+                  <h2 className="text-2xl font-black text-indigo-900">Media Gallery</h2>
+                  <label className="bg-indigo-600 text-white px-6 py-2 rounded-full font-bold cursor-pointer hover:bg-indigo-700 shadow-md flex items-center gap-2 transition-all active:scale-95">
+                      <i className="fas fa-plus"></i> Upload New
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'gallery')} />
+                  </label>
+              </div>
+              {isLoadingGallery ? (
+                  <div className="py-20 text-center text-indigo-600"><i className="fas fa-spinner fa-spin text-4xl"></i></div>
+              ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                      {mediaGallery.map(item => (
+                          <div key={item.key} className="group relative aspect-square bg-slate-50 rounded-xl overflow-hidden border-2 border-gray-100 hover:border-indigo-500 transition-all shadow-sm">
+                              <img src={item.url} alt="" className="w-full h-full object-cover" />
+                              <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => deleteMedia(item.key)} className="bg-red-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-lg hover:bg-red-700"><i className="fas fa-trash-alt text-xs"></i></button>
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-2 text-[10px] truncate opacity-0 group-hover:opacity-100">
+                                  {item.key.split('-').slice(1).join('-')}
+                              </div>
+                          </div>
+                      ))}
+                      {mediaGallery.length === 0 && (
+                          <div className="col-span-full py-20 text-center text-gray-400">
+                              <i className="far fa-images text-6xl mb-4"></i>
+                              <p className="font-bold uppercase tracking-widest text-sm">Your gallery is empty</p>
+                          </div>
+                      )}
+                  </div>
+              )}
+          </div>
+      )}
 
       {activeTab === 'manage-users' && (
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
@@ -204,6 +337,32 @@ export const AdminDashboard = () => {
                         <input name="salaryRange" value={jobData.salaryRange} onChange={handleJobChange} className="w-full border-2 border-gray-200 rounded-lg p-3" />
                     </div>
                 </div>
+                
+                <div className="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-indigo-900 mb-4">Job Logo / Cover Image</label>
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 space-y-2">
+                            <div className="flex gap-2">
+                                <input name="imageUrl" value={jobData.imageUrl} onChange={handleJobChange} className="flex-1 border-2 border-white rounded-lg p-3 bg-white" placeholder="Logo URL" />
+                                <button type="button" onClick={() => setShowGallerySelector('job')} className="bg-white text-indigo-600 px-4 py-3 rounded-lg font-bold border-2 border-indigo-100 hover:bg-indigo-50 whitespace-nowrap flex items-center gap-2">
+                                    <i className="fas fa-images"></i> Gallery
+                                </button>
+                                <label className="bg-indigo-600 text-white px-4 py-3 rounded-lg font-bold cursor-pointer hover:bg-indigo-700 whitespace-nowrap flex items-center gap-2 transition-all active:scale-95">
+                                    <i className="fas fa-upload"></i> Upload
+                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'job')} />
+                                </label>
+                            </div>
+                            {isUploading && <p className="text-[10px] text-indigo-600 font-bold animate-pulse">Uploading logo...</p>}
+                        </div>
+                        {jobData.imageUrl && (
+                            <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-white shadow-sm bg-white flex-shrink-0 relative">
+                                <img src={jobData.imageUrl} alt="Logo" className="w-full h-full object-contain" />
+                                <button type="button" onClick={() => setJobData(prev => ({...prev, imageUrl: ''}))} className="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 rounded-bl flex items-center justify-center text-[10px]"><i className="fas fa-times"></i></button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Duration</label>
@@ -218,7 +377,7 @@ export const AdminDashboard = () => {
                     <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Description</label>
                     <textarea name="description" value={jobData.description} onChange={handleJobChange} className="w-full border-2 border-gray-200 rounded-lg p-3 h-32" />
                 </div>
-                <button type="submit" className="bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg">Post Job</button>
+                <button type="submit" className="bg-indigo-600 text-white px-10 py-4 rounded-xl font-black text-lg uppercase tracking-widest hover:bg-indigo-700 shadow-xl transition-all active:scale-95">Post Job Now</button>
               </form>
           </div>
       )}
@@ -275,14 +434,27 @@ export const AdminDashboard = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-500 mb-1 uppercase">Cover Image</label>
-                    <div className="flex gap-2">
-                        <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="flex-1 border-2 border-gray-200 rounded-lg p-3" placeholder="https://..." />
-                        <label className="bg-indigo-600 text-white px-4 py-3 rounded-lg font-bold cursor-pointer hover:bg-indigo-700 whitespace-nowrap">
-                            Upload
-                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                        </label>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex gap-2">
+                            <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="flex-1 border-2 border-gray-200 rounded-lg p-3" placeholder="https://..." />
+                            <button type="button" onClick={() => setShowGallerySelector('article')} className="bg-white text-indigo-600 px-4 py-3 rounded-lg font-bold border-2 border-indigo-100 hover:bg-indigo-50 whitespace-nowrap flex items-center gap-2">
+                                <i className="fas fa-images"></i> Gallery
+                            </button>
+                            <label className="bg-indigo-600 text-white px-4 py-3 rounded-lg font-bold cursor-pointer hover:bg-indigo-700 whitespace-nowrap flex items-center gap-2 transition-all active:scale-95">
+                                <i className="fas fa-upload"></i> Upload
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'article')} />
+                            </label>
+                        </div>
+                        {imageUrl && (
+                            <div className="relative w-full max-w-xs h-40 rounded-xl overflow-hidden border-4 border-white shadow-lg">
+                                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                                <button type="button" onClick={() => setImageUrl('')} className="absolute top-2 right-2 bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-90">
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+                        )}
                     </div>
-                    {isUploading && <p className="text-xs text-indigo-600 font-bold mt-1">Uploading...</p>}
+                    {isUploading && <p className="text-xs text-indigo-600 font-bold mt-1 animate-pulse"><i className="fas fa-spinner fa-spin mr-1"></i> Uploading...</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-500 mb-1 uppercase">Content (HTML supported)</label>
@@ -310,7 +482,7 @@ export const AdminDashboard = () => {
               </div>
 
               <div className="flex justify-end pt-4">
-                <button type="submit" className="bg-indigo-600 text-white px-10 py-4 rounded-xl font-black text-lg uppercase tracking-widest hover:bg-indigo-700 shadow-xl">Publish Article</button>
+                <button type="submit" className="bg-indigo-600 text-white px-10 py-4 rounded-xl font-black text-lg uppercase tracking-widest hover:bg-indigo-700 shadow-xl transition-all active:scale-95">Publish Article</button>
               </div>
             </form>
           </div>
@@ -333,7 +505,7 @@ export const AdminDashboard = () => {
                   <td className="p-4 font-bold text-gray-900">{article.title}</td>
                   <td className="p-4"><span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded uppercase">{article.category}</span></td>
                   <td className="p-4 text-right">
-                    <button onClick={() => deleteArticle(article.id)} className="text-red-600 font-bold">Delete</button>
+                    <button onClick={() => deleteArticle(article.id)} className="text-red-600 font-bold hover:underline">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -344,3 +516,4 @@ export const AdminDashboard = () => {
     </div>
   );
 };
+
