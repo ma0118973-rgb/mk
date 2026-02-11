@@ -4,10 +4,26 @@ import { useAppContext } from '../context/AppContext';
 import { ArticleCard } from '../components/ArticleCard';
 
 export const Home = () => {
-  const { articles } = useAppContext();
+  const { articles, loading } = useAppContext();
   const [visibleCount, setVisibleCount] = useState(9);
 
-  if (!articles || articles.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!articles || articles.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white p-8 text-center">
+        <i className="far fa-newspaper text-6xl text-gray-300 mb-4"></i>
+        <h2 className="text-2xl font-serif font-bold text-gray-800 mb-2">No Stories Available</h2>
+        <p className="text-gray-500 max-w-md">We couldn't find any articles at the moment. Please check back later.</p>
+      </div>
+    );
+  }
 
   const coverStory = articles[0];
   const topStories = articles.slice(1, 4);

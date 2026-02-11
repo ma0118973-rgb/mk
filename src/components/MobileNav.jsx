@@ -20,12 +20,12 @@ export const MobileNav = ({ onMenuClick }) => {
         <span className="text-[9px] font-bold uppercase">Visa</span>
       </NavLink>
       
-      <div className="relative -top-5 w-14 h-14">
+      <div className="relative -top-8 w-20 h-20">
         <NavLink 
             to="/jobs" 
             className={({ isActive }) => `absolute inset-0 bg-pink-600 text-white rounded-full flex items-center justify-center shadow-lg border-4 border-slate-50 transform active:scale-95 transition-transform ${isActive ? 'bg-pink-700' : ''}`}
         >
-            <i className="fas fa-briefcase text-xl"></i>
+            <i className="fas fa-briefcase text-3xl"></i>
         </NavLink>
       </div>
       
