@@ -1,0 +1,127 @@
+import React, { useContext, useState, useMemo } from 'react';
+import { useAppContext } from '../context/AppContext';
+
+const JobCard = ({ job }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className={`bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 transition-all shadow-sm relative overflow-hidden group cursor-pointer ${expanded ? 'ring-2 ring-blue-500' : ''}`} onClick={() => setExpanded(!expanded)}>
+      <div className={`absolute top-0 right-0 text-[10px] font-bold px-2 py-1 uppercase tracking-wider rounded-bl ${job.isUserPosted ? 'bg-orange-50 text-orange-700' : 'bg-green-50 text-green-700'}`}>
+        {job.isUserPosted ? <span><i className="fas fa-user-circle mr-1"></i> User Post</span> : <span><i className="fas fa-check-circle mr-1"></i> {job.source || 'Verified'}</span>}
+      </div>
+      <div className="flex gap-4 items-start mb-4 pr-16">
+        {job.imageUrl && (
+          <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 bg-white">
+            <img src={job.imageUrl} alt={job.company} className="w-full h-full object-contain p-1" />
+          </div>
+        )}
+        <div className="flex-grow">
+          <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight">{job.title}</h3>
+          <p className="text-slate-500 font-medium text-sm">{job.company}</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-y-2 gap-x-4 text-sm text-gray-500 mb-4">
+        <span className="flex items-center gap-1"><i className="fas fa-map-marker-alt text-red-400"></i> {job.location}</span>
+        <span className="flex items-center gap-1"><i className="fas fa-briefcase text-blue-400"></i> {job.type}</span>
+        <span className="flex items-center gap-1 font-semibold text-green-600"><i className="fas fa-money-bill-wave"></i> {job.salaryRange}</span>
+      </div>
+      <div className={`text-gray-600 text-sm mb-4 transition-all duration-500 ${expanded ? 'line-clamp-none' : 'line-clamp-2'}`}>
+        <p className="whitespace-pre-line">{job.description}</p>
+        {expanded && <p className="mt-4 text-gray-500 italic text-xs bg-yellow-50 p-2 rounded border border-yellow-100"><i className="fas fa-shield-alt mr-1"></i>Safety Tip: Never pay money for a job interview. Report suspicious posts.</p>}
+      </div>
+      <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+        <span className="text-xs text-blue-600 font-bold uppercase tracking-widest">{expanded ? 'Show Less' : 'Read Full Details'}</span>
+        <button className="bg-slate-900 text-white text-sm px-6 py-2 rounded hover:bg-slate-800 transition-colors shadow-sm font-bold flex items-center">
+            Apply Now <i className="fas fa-external-link-alt ml-2 text-xs"></i>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export const JobBoard = () => {
+  const { jobs } = useAppContext();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('All');
+
+  const filteredJobs = useMemo(() => {
+    return jobs.filter(job => {
+      const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            job.company.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesLocation = locationFilter === '' || job.location.includes(locationFilter);
+      const matchesType = typeFilter === 'All' || job.type === typeFilter;
+      return matchesSearch && matchesLocation && matchesType;
+    });
+  }, [jobs, searchTerm, locationFilter, typeFilter]);
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8 pb-32">
+      <div className="bg-gradient-to-r from-blue-900 to-slate-900 rounded-3xl p-6 md:p-12 text-center text-white mb-8 shadow-2xl relative overflow-hidden">
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <h1 className="text-3xl md:text-5xl font-serif font-bold mb-8 leading-tight">Find Your Next Role in the USA</h1>
+          <div className="bg-white p-3 rounded-2xl shadow-xl flex flex-col md:flex-row gap-3">
+            <div className="flex-grow flex items-center bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+              <i className="fas fa-search text-gray-400 mr-3"></i>
+              <input 
+                type="text" 
+                placeholder="Job title, keywords, or company..." 
+                className="w-full bg-transparent text-gray-900 font-bold focus:outline-none placeholder-gray-400"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex-shrink-0 md:w-48 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 relative">
+              <i className="fas fa-map text-gray-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+              <select 
+                className="w-full bg-transparent text-gray-900 font-bold focus:outline-none pl-6 appearance-none cursor-pointer"
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+              >
+                <option value="">All Locations</option>
+                <option value="Remote">Remote</option>
+                <option value="New York">New York</option>
+                <option value="California">California</option>
+                <option value="Texas">Texas</option>
+              </select>
+              <i className="fas fa-chevron-down text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-xs"></i>
+            </div>
+            <button className="bg-pink-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-pink-700 transition-colors shadow-lg uppercase tracking-widest text-sm">Search</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="hidden lg:block space-y-8">
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm sticky top-24">
+            <h3 className="font-serif font-bold text-lg mb-4">Job Type</h3>
+            <div className="space-y-2">
+              {['All', 'Full-time', 'Part-time', 'Contract', 'Remote'].map(type => (
+                <label key={type} className={`flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-gray-50 ${typeFilter === type ? 'bg-blue-50 text-blue-700' : 'text-gray-600'}`}>
+                  <input type="radio" name="jobType" checked={typeFilter === type} onChange={() => setTypeFilter(type)} className="accent-blue-600 w-4 h-4" />
+                  <span className="font-medium">{type}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-3 space-y-6">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-bold text-slate-800 text-xl">{filteredJobs.length} Openings Found</h2>
+            <span className="text-xs text-gray-500 font-medium">Sorted by: Relevance</span>
+          </div>
+          {filteredJobs.length > 0 ? (
+            filteredJobs.map(job => <JobCard key={job.id} job={job} />)
+          ) : (
+            <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+              <i className="far fa-folder-open text-4xl text-slate-300 mb-4"></i>
+              <p className="text-slate-500">No jobs match your criteria.</p>
+              <button onClick={() => {setSearchTerm(''); setLocationFilter(''); setTypeFilter('All');}} className="mt-4 text-blue-600 font-bold hover:underline">Clear Filters</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
