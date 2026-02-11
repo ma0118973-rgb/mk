@@ -98,13 +98,21 @@ export const Home = () => {
         )}
       </section>
 
-      <section className="bg-slate-900 text-white py-24 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center"></div>
-        <div className="container mx-auto px-4 lg:px-8 text-center max-w-4xl relative z-10">
-          <span className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-4 block">Velara Careers</span>
-          <h2 className="text-4xl md:text-6xl font-serif font-bold mb-8 leading-tight">Define the Future.</h2>
-          <p className="text-gray-300 text-xl mb-12 font-serif leading-relaxed max-w-2xl mx-auto">Explore a curated selection of executive opportunities at the world's most visionary organizations.</p>
-          <Link to="/jobs" className="inline-block bg-white text-slate-900 px-10 py-5 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors">View Opportunities</Link>
+      <section className="bg-white py-10 sm:py-12">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 text-white shadow-2xl max-w-5xl mx-auto">
+            <span className="absolute top-4 left-6 bg-white text-slate-900 text-[10px] font-bold uppercase tracking-[0.3em] px-4 py-1 rounded-full shadow-md">
+              Jobs
+            </span>
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center bg-no-repeat bg-scroll md:bg-fixed"></div>
+            <div className="absolute inset-0 bg-slate-900/70"></div>
+            <div className="relative z-10 px-6 py-10 sm:px-10 sm:py-12 text-center max-w-2xl mx-auto">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-300 mb-4 block">Velara Careers</span>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold mb-5 leading-tight">Define the Future.</h2>
+              <p className="text-gray-200 text-base sm:text-lg mb-8 font-serif leading-relaxed">Explore a curated selection of executive opportunities at the world's most visionary organizations.</p>
+              <Link to="/jobs" className="inline-block bg-white text-slate-900 px-8 py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors">View Opportunities</Link>
+            </div>
+          </div>
         </div>
       </section>
     </div>

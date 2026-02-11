@@ -15,20 +15,12 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const fetchedArticles = await api.getArticles();
+        const [fetchedArticles, fetchedJobs] = await Promise.all([
+          api.getArticles(),
+          api.getJobs()
+        ]);
         setArticles(fetchedArticles);
-        
-        // Mock jobs for now or load from local storage
-        const storedJobs = localStorage.getItem('pg_jobs');
-        if (storedJobs) {
-            setJobs(JSON.parse(storedJobs));
-        } else {
-            // Basic mock jobs if empty
-            setJobs([
-                { id: '1', title: 'Software Engineer', company: 'Tech Corp', location: 'Remote', type: 'Full-time', salaryRange: '$100k-$150k', postedDate: 'Today' },
-                { id: '2', title: 'Product Manager', company: 'Biz Inc', location: 'New York', type: 'Full-time', salaryRange: '$120k-$180k', postedDate: 'Yesterday' }
-            ]);
-        }
+        setJobs(fetchedJobs);
 
         // Mock Users
         setUsers([
@@ -50,50 +42,55 @@ export const AppProvider = ({ children }) => {
     loadData();
   }, []);
 
-  const addArticle = useCallback((article) => {
-    setArticles(prev => {
-        const updated = [article, ...prev];
-        api.saveArticles(updated);
-        return updated;
-    });
+  const addArticle = useCallback(async (article) => {
+    try {
+      const saved = await api.createArticle(article);
+      setArticles(prev => [saved, ...prev]);
+    } catch (error) {
+      console.error("Failed to add article", error);
+    }
   }, []);
 
-  const updateArticle = useCallback((updatedArticle) => {
-    setArticles(prev => {
-        const updated = prev.map(a => a.id === updatedArticle.id ? updatedArticle : a);
-        api.saveArticles(updated);
-        return updated;
-    });
+  const updateArticle = useCallback(async (updatedArticle) => {
+    try {
+      const saved = await api.updateArticle(updatedArticle);
+      setArticles(prev => prev.map(a => a.id === saved.id ? saved : a));
+    } catch (error) {
+      console.error("Failed to update article", error);
+    }
   }, []);
 
-  const deleteArticle = useCallback((id) => {
-    setArticles(prev => {
-        const updated = prev.filter(a => a.id !== id);
-        api.saveArticles(updated);
-        return updated;
-    });
+  const deleteArticle = useCallback(async (id) => {
+    try {
+      await api.deleteArticle(id);
+      setArticles(prev => prev.filter(a => a.id !== id));
+    } catch (error) {
+      console.error("Failed to delete article", error);
+    }
   }, []);
 
-  const addJob = useCallback((job) => {
-    setJobs(prev => {
-        const updated = [job, ...prev];
-        localStorage.setItem('pg_jobs', JSON.stringify(updated));
-        return updated;
-    });
-    // Track my posted jobs
-    setMyPostedJobIds(prev => {
-        const updated = [...prev, job.id];
-        localStorage.setItem('my_posted_jobs', JSON.stringify(updated));
-        return updated;
-    });
+  const addJob = useCallback(async (job) => {
+    try {
+      const saved = await api.createJob(job);
+      setJobs(prev => [saved, ...prev]);
+      // Track my posted jobs
+      setMyPostedJobIds(prev => {
+          const updated = [...prev, job.id];
+          localStorage.setItem('my_posted_jobs', JSON.stringify(updated));
+          return updated;
+      });
+    } catch (error) {
+      console.error("Failed to add job", error);
+    }
   }, []);
 
-  const deleteJob = useCallback((id) => {
-    setJobs(prev => {
-        const updated = prev.filter(j => j.id !== id);
-        localStorage.setItem('pg_jobs', JSON.stringify(updated));
-        return updated;
-    });
+  const deleteJob = useCallback(async (id) => {
+    try {
+      await api.deleteJob(id);
+      setJobs(prev => prev.filter(j => j.id !== id));
+    } catch (error) {
+      console.error("Failed to delete job", error);
+    }
   }, []);
 
   const banUser = useCallback((id) => {

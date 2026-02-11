@@ -10,6 +10,8 @@ export const CATEGORIES = {
   LIFESTYLE: "Lifestyle",
 };
 
+const API_BASE = "/.netlify/functions";
+
 const generateMockArticles = () => {
   // Generate some articles if none exist
   const articles = [];
@@ -33,6 +35,7 @@ const generateMockArticles = () => {
       imageUrl: images[i % images.length],
       likes: Math.floor(Math.random() * 100),
       views: Math.floor(Math.random() * 1000),
+      hashtags: "#Future #Global #2026",
       tags: ["#Future", "#Global", "#2026"],
       seoTitle: `${title} | VELARA`,
       seoDescription: `Read about ${title}. In-depth analysis and global perspectives.`
@@ -41,22 +44,67 @@ const generateMockArticles = () => {
   return articles;
 };
 
-export const getArticles = async () => {
-  // Simulate API fetch
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const stored = localStorage.getItem('velara_articles');
-  if (stored) return JSON.parse(stored);
-  
-  const mock = generateMockArticles();
-  localStorage.setItem('velara_articles', JSON.stringify(mock));
-  return mock;
+const requestJson = async (path, options = {}) => {
+  const response = await fetch(`${API_BASE}/${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || "Request failed");
+  }
+  return response.json();
 };
 
-export const saveArticles = async (articles) => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  localStorage.setItem('velara_articles', JSON.stringify(articles));
-  return true;
+export const getArticles = async () => {
+  try {
+    return await requestJson("articles");
+  } catch (error) {
+    console.error("Failed to fetch articles", error);
+    return generateMockArticles();
+  }
+};
+
+export const createArticle = async (article) => {
+  return requestJson("articles", {
+    method: "POST",
+    body: JSON.stringify({ article }),
+  });
+};
+
+export const updateArticle = async (article) => {
+  return requestJson("articles", {
+    method: "PUT",
+    body: JSON.stringify({ article }),
+  });
+};
+
+export const deleteArticle = async (id) => {
+  return requestJson(`articles?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+};
+
+export const getJobs = async () => {
+  try {
+    return await requestJson("jobs");
+  } catch (error) {
+    console.error("Failed to fetch jobs", error);
+    return [];
+  }
+};
+
+export const createJob = async (job) => {
+  return requestJson("jobs", {
+    method: "POST",
+    body: JSON.stringify({ job }),
+  });
+};
+
+export const deleteJob = async (id) => {
+  return requestJson(`jobs?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 };
 
 export const getArticleBySlug = async (slug) => {
