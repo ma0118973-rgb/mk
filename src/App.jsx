@@ -10,6 +10,7 @@ import { StaticPage } from './pages/StaticPage';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { MobileNav } from './components/MobileNav';
+import ErrorBoundary from './components/ErrorBoundary';
 import * as api from './services/api';
 
 const AnalyticsTracker = () => {
@@ -39,35 +40,37 @@ function App() {
 
   return (
     <AppProvider>
-      <BrowserRouter>
-        <AnalyticsTracker />
-        <div className="min-h-screen flex flex-col bg-slate-50 overflow-x-hidden w-full relative font-sans text-slate-900">
-          <Navbar isOpen={isMenuOpen} setIsOpen={setIsMenuOpen} />
-          <main className="flex-grow w-full max-w-[100vw] overflow-x-hidden bg-slate-50 mb-16 lg:mb-0">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/category/:categoryName" element={<CategoryPage />} />
-              {/* Dynamic Routing: Using Slug instead of ID */}
-              <Route path="/blog/:slug" element={<ArticleDetail />} />
-              {/* Legacy support: Redirect old ID based URLs if needed, or handle them in ArticleDetail */}
-              <Route path="/article/:id" element={<ArticleDetail />} /> 
-              
-              <Route path="/jobs" element={<JobBoard />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              
-              <Route path="/privacy" element={<StaticPage type="privacy" />} />
-              <Route path="/terms" element={<StaticPage type="terms" />} />
-              <Route path="/disclaimer" element={<StaticPage type="disclaimer" />} />
-              <Route path="/contact" element={<StaticPage type="contact" />} />
-              <Route path="/about" element={<StaticPage type="about" />} />
-              
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <Footer />
-          <MobileNav onMenuClick={() => setIsMenuOpen(true)} />
-        </div>
-      </BrowserRouter>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <AnalyticsTracker />
+          <div className="min-h-screen flex flex-col bg-slate-50 overflow-x-hidden w-full relative font-sans text-slate-900">
+            <Navbar isOpen={isMenuOpen} setIsOpen={setIsMenuOpen} />
+            <main className="flex-grow w-full max-w-[100vw] overflow-x-hidden bg-slate-50 mb-16 lg:mb-0">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/category/:categoryName" element={<CategoryPage />} />
+                {/* Dynamic Routing: Using Slug instead of ID */}
+                <Route path="/blog/:slug" element={<ArticleDetail />} />
+                {/* Legacy support: Redirect old ID based URLs if needed, or handle them in ArticleDetail */}
+                <Route path="/article/:id" element={<ArticleDetail />} /> 
+                
+                <Route path="/jobs" element={<JobBoard />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                
+                <Route path="/privacy" element={<StaticPage type="privacy" />} />
+                <Route path="/terms" element={<StaticPage type="terms" />} />
+                <Route path="/disclaimer" element={<StaticPage type="disclaimer" />} />
+                <Route path="/contact" element={<StaticPage type="contact" />} />
+                <Route path="/about" element={<StaticPage type="about" />} />
+                
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+            <Footer />
+            <MobileNav onMenuClick={() => setIsMenuOpen(true)} />
+          </div>
+        </BrowserRouter>
+      </ErrorBoundary>
     </AppProvider>
   );
 }
