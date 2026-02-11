@@ -13,6 +13,17 @@ body {
   background-color: #f8fafc;
   color: #1e293b;
   overflow-x: hidden;
+  /* Ensure padding at the bottom for fixed mobile nav */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Fix for images overflowing containers */
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+iframe {
+  max-width: 100%;
 }
 
 h1, h2, h3, h4 {
@@ -36,4 +47,19 @@ h1, h2, h3, h4 {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #4f46e5;
+}
+
+/* Utilities for safe area */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-area-padding {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile Nav specific */
+.mobile-nav-height {
+  height: 64px; /* Fallback */
+  height: calc(64px + env(safe-area-inset-bottom));
 }
