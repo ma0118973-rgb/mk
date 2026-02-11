@@ -4,11 +4,7 @@ import { getStore, getDeployStore } from "@netlify/blobs";
 declare const Netlify: { env?: Record<string, string | undefined> } | undefined;
 
 const getBlobStore = () => {
-  const contextName = Netlify?.env?.CONTEXT ?? "dev";
-  if (contextName === "production") {
-    return getStore("velara-data", { consistency: "strong" });
-  }
-  return getDeployStore("velara-data");
+  return getStore("velara-data");
 };
 
 const seedJobs = () => {
